@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webjack - Blackjack Game</title>
+    <meta name="description" content="Play Webjack, a modern and fun online Blackjack game. Enjoy a beautiful felt table, chips, and smooth gameplay!">
+    <meta property="og:title" content="Webjack - Blackjack Game">
+    <meta property="og:description" content="Play Webjack, a modern and fun online Blackjack game. Enjoy a beautiful felt table, chips, and smooth gameplay!">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://webjack.reversed.dev/">
+    <meta property="og:image" content="https://webjack.reversed.dev/icon.png">
+    <meta property="og:image:width" content="512">
+    <meta property="og:image:height" content="512">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Webjack - Blackjack Game">
+    <meta name="twitter:description" content="Play Webjack, a modern and fun online Blackjack game. Enjoy a beautiful felt table, chips, and smooth gameplay!">
+    <meta name="twitter:image" content="https://webjack.reversed.dev/icon.png">
+    <link rel="icon" type="image/png" href="icon.png" sizes="512x512">
+    <script defer src="https://not-a-tracker.reversed.dev/script.js" data-website-id="49af8e3a-0e7b-4e8c-9045-1a260fd5fe31"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+      /* Felt background and card animation only */
+      .felt-bg {
+        background-color: #17462e;
+        background-image:
+          url('https://www.transparenttextures.com/patterns/green-felt.png'),
+          radial-gradient(#1e6b41 15%, transparent 16%),
+          radial-gradient(#1e6b41 15%, transparent 16%);
+        background-size: auto, 12px 12px, 12px 12px;
+        background-position: 0 0, 0 0, 6px 6px;
+        border: 2px solid #bfa046;
+        box-shadow: 0 4px 32px rgba(0,0,0,0.25);
+      }
+      .card-appear {
+        animation: card-deal 0.3s cubic-bezier(.4,0,.2,1);
+      }
+      @keyframes card-deal {
+        from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+      }
+      @keyframes fade-in { 
+        from { opacity: 0; transform: scale(0.95); } 
+        to { opacity: 1; transform: scale(1); } 
+      }
+      .animate-fade-in { animation: fade-in 0.3s cubic-bezier(.4,0,.2,1); }
+      .modal-overlay-bg {
+        /* Use a transparent gradient for a softer overlay */
+        background: linear-gradient(135deg, rgba(24,31,27,0.15) 0%, rgba(0,0,0,0.18) 100%);
+        /* fallback for old browsers */
+        background-color: rgba(24,31,27,0.15);
+      }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center justify-center bg-[#181f1b] font-sans">
+  <div class="w-full max-w-3xl mx-auto p-4">
+    <h1 class="text-center font-bold text-4xl md:text-5xl tracking-wide text-yellow-300 mb-8 font-montserrat flex items-center justify-center gap-2">
+      <i class="fas fa-crown text-yellow-400"></i>
+      Webjack
+      <i class="fas fa-crown text-yellow-400"></i>
+    </h1>
+    
+    <!-- Place Bet Button -->
+    <div class="flex justify-center mb-4">
+      <button id="open-bet-modal-btn"
+        class="rounded-lg bg-yellow-700 hover:bg-yellow-600 text-neutral-900 font-semibold py-2 px-6 border border-yellow-700 shadow transition">
+        <i class="fas fa-coins mr-1"></i> Place Bet
+      </button>
+    </div>
+    
+    <div id="accounting" class="bg-gradient-to-r from-neutral-900 to-green-950 border border-yellow-700 rounded-xl shadow-lg p-4 mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+      <div class="text-yellow-300 font-bold text-xl flex items-center gap-2">
+        <i class="fas fa-coins"></i> Balance: $<span id="balance">0</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="refill-btn"
+          class="rounded-lg bg-pink-900 hover:bg-pink-800 text-yellow-100 font-semibold py-2 px-4 border border-yellow-700 shadow transition hidden">
+          <i class="fas fa-hand-holding-dollar mr-1"></i> Get $100
+        </button>
+      </div>
+    </div>
+    
+    <div id="game-area" class="felt-bg rounded-2xl shadow-2xl p-6 flex flex-col gap-6">
+      <!-- Dealer Area -->
+      <div>
+        <div class="bg-neutral-900/80 border border-yellow-700 rounded-lg flex items-center gap-4 px-4 py-2">
+          <h2 class="text-lg font-semibold text-yellow-200 font-montserrat flex items-center gap-2">
+            <i class="fas fa-user-tie text-yellow-400"></i> Dealer
+          </h2>
+          <span class="text-yellow-400 text-sm">Value: <span id="dealer-value">0</span></span>
+        </div>
+        <div id="dealer-cards" class="flex gap-2 mt-2 min-h-[120px]"></div>
+        <div id="dealer-status" class="text-yellow-400 mt-1"></div>
+      </div>
+      
+      <!-- Player Area -->
+      <div>
+        <div class="bg-neutral-900/80 border border-yellow-700 rounded-lg flex items-center gap-4 px-4 py-2">
+          <h2 class="text-lg font-semibold text-yellow-200 font-montserrat flex items-center gap-2">
+            <i class="fas fa-user text-yellow-400"></i> Player
+          </h2>
+          <span class="text-yellow-400 text-sm">Value: <span id="player-value">0</span></span>
+        </div>
+        <div id="player-cards" class="flex gap-2 mt-2 min-h-[120px]"></div>
+        <div id="player-status" class="text-yellow-400 mt-1"></div>
+      </div>
+      
+      <!-- Current Bet Display -->
+      <div id="current-bet-display" class="bg-neutral-900/80 border border-yellow-700 rounded-lg text-center text-xl font-bold text-yellow-300 px-4 py-2">
+        Current Bet: $<span id="current-bet-amount">0</span>
+      </div>
+      
+      <!-- Controls -->
+      <div class="flex gap-4 justify-center">
+        <button id="hit-btn"
+          class="rounded-lg bg-green-800 hover:bg-green-700 text-yellow-100 font-semibold py-2 px-6 border border-yellow-700 shadow transition">
+          <i class="fas fa-plus mr-1"></i> Hit
+        </button>
+        <button id="stand-btn"
+          class="rounded-lg bg-red-900 hover:bg-red-800 text-yellow-100 font-semibold py-2 px-6 border border-yellow-700 shadow transition">
+          <i class="fas fa-hand mr-1"></i> Stand
+        </button>
+        <button id="new-game-btn"
+          class="rounded-lg bg-blue-900 hover:bg-blue-800 text-yellow-100 font-semibold py-2 px-6 border border-yellow-700 shadow transition hidden">
+          <i class="fas fa-play mr-1"></i> New Game
+        </button>
+      </div>
+      <div id="result-message" class="text-center text-2xl font-bold text-yellow-200 mt-4"></div>
+    </div>
+
+    <div class="text-center text-yellow-400 opacity-70 mt-8 font-montserrat text-lg">WebJack build with ❤️ by <a href="space.reversed.dev">Space</a> using Tailwind & <a href="https://fontawesome.com">Font Awesome</a></div>
+  </div>
+
+  <!-- Bet Modal -->
+  <div id="bet-modal" class="fixed inset-0 z-50 flex items-center justify-center modal-overlay-bg hidden">
+    <div class="bg-neutral-900 border border-yellow-700 rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 animate-fade-in max-w-md w-full">
+      <h2 class="text-2xl text-yellow-200 font-bold mb-2 font-montserrat flex items-center gap-2">
+        <i class="fas fa-coins text-yellow-400"></i> Place Your Bet
+      </h2>
+      
+      <div class="text-yellow-300 font-bold text-lg">Your Balance: $<span id="modal-balance">0</span></div>
+      
+      <div class="flex flex-wrap justify-center gap-2 mb-2">
+        <button class="bet-btn rounded-full bg-red-900 text-yellow-100 border border-yellow-700 w-12 h-12 font-bold flex items-center justify-center" data-amount="10">$10</button>
+        <button class="bet-btn rounded-full bg-blue-900 text-yellow-100 border border-yellow-700 w-12 h-12 font-bold flex items-center justify-center" data-amount="20">$20</button>
+        <button class="bet-btn rounded-full bg-green-900 text-yellow-100 border border-yellow-700 w-12 h-12 font-bold flex items-center justify-center" data-amount="50">$50</button>
+        <button class="bet-btn rounded-full bg-purple-900 text-yellow-100 border border-yellow-700 w-12 h-12 font-bold flex items-center justify-center" data-amount="100">$100</button>
+        <button class="bet-btn rounded-full bg-yellow-700 text-neutral-900 border border-yellow-700 w-12 h-12 font-bold flex items-center justify-center" data-amount="1000">$1K</button>
+      </div>
+      
+      <div class="flex gap-2 mb-2">
+        <button class="bet-btn rounded-lg bg-neutral-800 text-yellow-100 border border-yellow-700 py-1 px-3 font-semibold" data-amount="min">Min</button>
+        <button class="bet-btn rounded-lg bg-neutral-800 text-yellow-100 border border-yellow-700 py-1 px-3 font-semibold" data-amount="max">Max</button>
+        <button class="bet-btn rounded-lg bg-neutral-800 text-yellow-100 border border-yellow-700 py-1 px-3 font-semibold" data-amount="clear">Clear</button>
+      </div>
+      
+      <div class="flex items-center gap-2 mt-2">
+        <label for="modal-bet-amount" class="text-yellow-400">Bet Amount:</label>
+        <input id="modal-bet-amount" type="number" min="10" max="5000" step="10" value="10"
+          class="w-32 px-2 py-1 rounded bg-neutral-900 text-yellow-100 border border-yellow-700 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition" />
+      </div>
+      
+      <button id="modal-place-bet-btn"
+        class="rounded-lg bg-green-800 hover:bg-green-700 text-yellow-100 font-semibold py-2 px-6 border border-yellow-700 shadow transition mt-2">
+        <i class="fas fa-check mr-1"></i> Place Bet
+      </button>
+    </div>
+  </div>
+
+  <!-- Win/Loss Modal -->
+  <div id="result-modal" class="fixed inset-0 z-50 flex items-center justify-center modal-overlay-bg hidden">
+    <div class="bg-neutral-900 border border-yellow-700 rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-4 animate-fade-in max-w-md w-full">
+      <h2 id="result-modal-title" class="text-3xl font-bold mb-2 text-yellow-200 font-montserrat"></h2>
+      <div id="result-modal-message" class="text-xl text-yellow-400"></div>
+      <button id="result-modal-close"
+        class="rounded-lg bg-green-800 hover:bg-green-700 text-yellow-100 font-semibold py-2 px-6 border border-yellow-700 shadow transition mt-4">
+        <i class="fas fa-check mr-1"></i> Continue
+      </button>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+
+</html>
